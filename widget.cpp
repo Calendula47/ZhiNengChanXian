@@ -36,26 +36,61 @@ int Widget::randomNumberGenerate(int start, int end)//随机数生成器
 
 void Widget::generateItem()//随机生成入库货物的长度和重量
 {
+    totalItemLength=0;
     for (int i = 0; i < ui->shuruhuowu->value(); ++i)
     {
-        int itemLength = randomNumberGenerate(1000,9000);
+        int itemLength = randomNumberGenerate(100,900);
         items.push_back({itemLength,itemLength*randomNumberGenerate(1,5)});
+        totalItemLength+=itemLength;
     }
 }
 
-void Widget::generatePlace()//随机生成已存在的货物并每层放一个（一层放多个有点点难，先不做）
+void Widget::generatePlace()//随机生成已存在的货物并随机放在货架的层上
 {
-    std::vector<int> itemOnShelf;
-    for (int i = 0; i < ui->yiyouhuowu->value(); ++i)
+    for (int i = 0; i < ui->yiyouhuowu->value(); ++i)//随机生成已存在的货物
     {
-        itemOnShelf.push_back(randomNumberGenerate(1000,9000));
-        int firstLength=randomNumberGenerate(0,ui->huojiachangdu->value()-itemOnShelf[i]);
-        int secondLength=ui->huojiachangdu->value()-itemOnShelf[i]-firstLength;
-        places.push_back({i,0,firstLength});
-        if(secondLength > 1000+ui->huowujianju->value())
+        itemOnShelf.push_back(randomNumberGenerate(100,900));
+    }
+
+    totalPlaceLength=0;
+
+    int currentLayer = 0;
+    int currentItemOnShelfID = 0;
+    while(totalPlaceLength<=totalItemLength)
+    {
+        int usedLength = 0;
+        int itemsOnThisLayer = randomNumberGenerate(0,3);
+        if (itemsOnThisLayer == 0)//如果这层放0个货物则直接输出整个layer长度
         {
-            places.push_back({i,firstLength+itemOnShelf[i],secondLength});
+            places.push_back({currentLayer,0,ui->huojiachangdu->value()});
+            totalPlaceLength+=ui->huojiachangdu->value();
         }
+        else
+        {
+            for(int i = 0; i < itemsOnThisLayer; ++i)
+            {
+                if(currentItemOnShelfID<itemOnShelf.size())//如果还有货物
+                {
+                    int thisLength=randomNumberGenerate(0,(ui->huojiachangdu->value()-usedLength)/(itemsOnThisLayer-i+1));//随机生成一个空位长度，长度范围为剩余长度/本层未放置的物品数量
+                    usedLength+=thisLength;
+                    if(thisLength>=100+ui->huowujianju->value())//如果这一位能放下物品则记录其数值
+                    {
+                        places.push_back({currentLayer,usedLength-thisLength,thisLength});
+                        totalPlaceLength+=thisLength;
+                    }
+                    usedLength+=itemOnShelf[currentItemOnShelfID];
+                    ++currentItemOnShelfID;
+                }
+                else
+                {break;}
+            }
+            if(ui->huojiachangdu->value()-usedLength>=100+ui->huowujianju->value())//如果本层还有位置
+            {
+                places.push_back({currentLayer,usedLength,ui->huojiachangdu->value()-usedLength});
+                totalPlaceLength+=ui->huojiachangdu->value()-usedLength;
+            }
+        }
+        ++currentLayer;
     }
 }
 
