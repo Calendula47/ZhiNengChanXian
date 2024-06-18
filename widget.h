@@ -22,11 +22,19 @@ public:
     int randomNumberGenerate(int start, int end);
     void generateItem();
     void generatePlace();
+    std::vector<int> generateIndividual();
+    std::vector<std::vector<int>> generatePopulation();
+    double fitness(const std::vector<int> &individual);
 
     struct Item{int length;int weight;};
-    struct Place{int layer;int position;int length;};
+    struct Place{int layer;int position;int length;int usedLength;int usedWeight;};
     std::vector<Item> items;
     std::vector<Place> places;
+    std::vector<int> itemOnShelf;
+    int totalItemLength;
+    int totalPlaceLength;
+    std::vector<int> individual;
+    std::vector<std::vector<int>> population;
 
 private slots:
     void on_pushButton_clicked();
