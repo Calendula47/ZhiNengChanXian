@@ -21,9 +21,20 @@ Widget::Widget(QWidget *parent)
     ui->yiyouhuowu->setValue(20);
     ui->shuruhuowu->setRange(0,200);
     ui->shuruhuowu->setValue(50);
-    ui->diedaicishu->setRange(0,500);
-    ui->diedaicishu->setSingleStep(10);
-    ui->diedaicishu->setValue(150);
+
+    ui->jiaochagailv->setRange(0,1);
+    ui->jiaochagailv->setSingleStep(0.01);
+    ui->jiaochagailv->setValue(0.7);
+    ui->tubiangailv->setRange(0,1);
+    ui->tubiangailv->setDecimals(3);
+    ui->tubiangailv->setSingleStep(0.001);
+    ui->tubiangailv->setValue(0.01);
+    ui->zhongqundaxiao->setRange(20,500);
+    ui->zhongqundaxiao->setSingleStep(10);
+    ui->zhongqundaxiao->setValue(50);
+    ui->diedaicishu->setRange(100,1000);
+    ui->diedaicishu->setSingleStep(100);
+    ui->diedaicishu->setValue(500);
 }
 
 Widget::~Widget()
@@ -33,8 +44,7 @@ Widget::~Widget()
 
 int Widget::randomNumberGenerate(int start, int end)//随机数生成器
 {
-    std::random_device rd;
-    std::mt19937 gen(rd());
+    std::mt19937 gen(std::random_device{}());
     std::uniform_int_distribution dis(start,end);
     int number = dis(gen);
     return number;
@@ -53,6 +63,7 @@ void Widget::generateItem()//随机生成入库货物的长度和重量
 
 void Widget::generatePlace()//随机生成已存在的货物并随机放在货架的层上
 {
+    itemOnShelf.clear();
     for (int i = 0; i < ui->yiyouhuowu->value(); ++i)//随机生成已存在的货物，货物的大小从10cm~90cm不等
     {
         itemOnShelf.push_back(randomNumberGenerate(ui->zuixiaochangdu->value(),ui->zuidachangdu->value()));
@@ -101,15 +112,34 @@ void Widget::generatePlace()//随机生成已存在的货物并随机放在货�
 
 std::vector<int> Widget::generateIndividual()//生成个体（第i个个体的值表示第i个货物放在这个值的空段中）
 {
+    individual.clear();
+    for (int i = 0; i < places.size(); ++i)
+    {
+        places[i].usedLength = 0;
+        places[i].usedWeight = 0;
+    }
+
     for (int i = 0; i < items.size(); ++i)
     {
-        individual.push_back(randomNumberGenerate(0, places.size() - 1));
+        int placeIn;
+        while(true)//检测这次生成的是否是可以放货物的空段
+        {
+            placeIn = randomNumberGenerate(0, places.size() - 1);
+            if((places[placeIn].length - places[placeIn].usedLength) > (items[i].length + ui->huowujianju->value()))
+            {
+                break;//如果是才执行下面的步骤，否则一直尝试随机生成空段ID
+            }
+        }
+        places[placeIn].usedLength += (items[i].length + ui->huowujianju->value());
+        places[placeIn].usedWeight += items[i].weight;
+        individual.push_back(placeIn);
     }
     return individual;
 }
 
 std::vector<std::vector<int> > Widget::generatePopulation()//生成种群
 {
+    individual.clear();
     for (int i = 0; i < ui->zhongqundaxiao->value() - 1; ++i)
     {
         population.push_back(generateIndividual());
@@ -117,37 +147,125 @@ std::vector<std::vector<int> > Widget::generatePopulation()//生成种群
     return population;
 }
 
-double Widget::fitness(const std::vector<int> &individual)//适应度函数（现在只做出来了长度判断，重量有点没思路）
+double Widget::fitness(const std::vector<int> &individual) const//适应度函数（现在只做出来了长度判断，重量有点没思路）
 {
-    for (int i = 0; i < individual.size(); ++i)//将每个货物的长度和重量更新进放这个货物的空段的被使用长度中
+    std::vector<Place> tempPlaces = places;
+    for (int i = 0; i < tempPlaces.size(); ++i)
     {
-        places[individual[i]].usedLength += (items[i].length + ui->huowujianju->value());
-        places[individual[i]].usedWeight += items[i].weight;
+        tempPlaces[i].usedLength = 0;
+        tempPlaces[i].usedWeight = 0;
     }
-
-    double usedRatio = 0;
-    for (int i = 0; i < (places.size() - 1); ++i)//计算每个空段的填充度,不考虑最后一个空段
+    for (int i = 0; i < individual.size(); ++i)
     {
-        if(places[i].length < places[i].usedLength)//如果空段被使用的长度大于本身长度则直接返回适应度为0
+        tempPlaces[individual[i]].usedLength += (items[i].length + ui->huowujianju->value());
+        tempPlaces[individual[i]].usedWeight += items[i].weight;
+    }
+    double usedRatio = 0;
+    for (int i = 0; i < (tempPlaces.size() - 1); ++i)//计算每个空段的填充度,不考虑最后一个空段
+    {
+        if(tempPlaces[i].length < tempPlaces[i].usedLength)//如果空段被使用的长度大于本身长度则直接返回适应度为0
         {
             return 0;
         }
         else
         {
-            if(places[i].usedLength == 0)//如果一个空段未被使用则认为其被填满以满足货物在未使用完空段就填满的情况
+            if(tempPlaces[i].usedLength == 0)//如果一个空段未被使用则认为其被填满以满足货物在未使用完空段就填满的情况
             {
                 usedRatio += 1;
             }
             else
             {
-                usedRatio += (places[i].usedLength / places[i].length);
+                usedRatio += (static_cast<double>(tempPlaces[i].usedLength) / static_cast<double>(tempPlaces[i].length));
             }
         }
     }
-    return usedRatio / places.size();//返回整个排样方法的总填充度
+    return usedRatio / static_cast<double>(tempPlaces.size());//返回整个排样方法的总填充度
 }
 
+std::vector<int> Widget::selection() const//选择
+{
+    std::vector<double> fitnessValues;
+    for(const auto& ind : population)
+    {
+        fitnessValues.push_back(fitness(ind));
+    }
 
+    std::discrete_distribution<int> dist(fitnessValues.begin(),fitnessValues.end());
+    std::mt19937 gen{std::random_device{}()};
+    return population[dist(gen)];
+}
+
+std::pair<std::vector<int>, std::vector<int> > Widget::crossover(const std::vector<int> &parent1, const std::vector<int> &parent2) const//交叉
+{
+    std::mt19937 gen(std::random_device{}());
+    double canCrossover = std::uniform_real_distribution<double>(0.0, 1.0)(gen);
+    if(canCrossover < ui->jiaochagailv->value())
+    {
+        int point = std::uniform_int_distribution<int>(1, static_cast<int>(parent1.size() - 1))(gen);
+
+        std::vector<int> child1(parent1.begin(), parent1.begin() + point);
+        child1.insert(child1.end(), parent2.begin() + point, parent2.end());
+
+        std::vector<int> child2(parent2.begin(), parent2.begin() + point);
+        child2.insert(child2.end(), parent1.begin() + point, parent1.end());
+
+        return {child1, child2};
+    }
+    else
+    {
+        return {parent1, parent2};
+    }
+}
+
+void Widget::mutate(std::vector<int> &individual) const//变异
+{
+    std::mt19937 gen(std::random_device{}());
+    if (std::uniform_real_distribution<double>{0.0, 1.0}(gen) < ui->tubiangailv->value())
+    {
+        int i = std::uniform_int_distribution<int>{0, static_cast<int>(individual.size() - 1)}(gen);
+        int j = std::uniform_int_distribution<int>{0, static_cast<int>(individual.size() - 1)}(gen);
+        std::swap(individual[i], individual[j]);
+    }
+}
+
+std::vector<int> Widget::getBestIndividual() const//寻找最大适应度的个体
+{
+    return *std::max_element(population.begin(), population.end(), [this](const auto& a, const auto& b){return fitness(a) > fitness(b);});
+}
+
+void Widget::printBestSolution() const
+{
+    auto best = getBestIndividual();
+    QString text;
+    text.clear();
+    // text.append("第");
+    // text.append(QString::number(currentGeneration));
+    // text.append("次迭代填充度：");
+    text.append(QString::number(fitness(best)));
+    ui->shuchu->append(text);
+}
+
+void Widget::runGeneticAlgorithm()//遗传函数本体
+{
+    generatePopulation();//创建初始种群
+    for (int generation = 0; generation < ui->diedaicishu->value(); ++generation)
+    {
+        currentGeneration = generation;
+        std::vector<std::vector<int>> newPopulation;
+        for (int i = 0; i < (ui->zhongqundaxiao->value() / 2); ++i)
+        {
+            auto parent1 = selection();
+            auto parent2 = selection();
+            auto [child1, child2] = crossover(parent1, parent2);
+            mutate(child1);
+            mutate(child2);
+            newPopulation.push_back(child1);
+            newPopulation.push_back(child2);
+        }
+        population = newPopulation;
+        printBestSolution();
+    }
+}
 
 void Widget::on_pushButton_clicked()
 {
@@ -156,18 +274,5 @@ void Widget::on_pushButton_clicked()
     ui->shuchu->clear();
     generateItem();
     generatePlace();
-    for (int i = 0; i < items.size(); ++i)
-    {
-        ui->shuchu->append(QString::number(items[i].length));
-        ui->shuchu->append(QString::number(items[i].weight));
-        ui->shuchu->append("----------");
-    }
-    for (int j = 0; j < places.size(); ++j)
-    {
-        ui->shuchu->append(QString::number(places[j].layer));
-        ui->shuchu->append(QString::number(places[j].position));
-        ui->shuchu->append(QString::number(places[j].length));
-        ui->shuchu->append("----------");
-    }
+    runGeneticAlgorithm();
 }
-

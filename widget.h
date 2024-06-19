@@ -24,7 +24,13 @@ public:
     void generatePlace();
     std::vector<int> generateIndividual();
     std::vector<std::vector<int>> generatePopulation();
-    double fitness(const std::vector<int> &individual);
+    double fitness(const std::vector<int> &individual) const;
+    std::vector<int> selection() const;
+    std::pair<std::vector<int>,std::vector<int>> crossover(const std::vector<int>& parent1, const std::vector<int>& parent2) const;
+    void mutate(std::vector<int>& individual) const;
+    std::vector<int> getBestIndividual() const;
+    void runGeneticAlgorithm();
+    void printBestSolution() const;
 
     struct Item{int length;int weight;};
     struct Place{int layer;int position;int length;int usedLength;int usedWeight;};
@@ -35,6 +41,7 @@ public:
     int totalPlaceLength;
     std::vector<int> individual;
     std::vector<std::vector<int>> population;
+    int currentGeneration;
 
 private slots:
     void on_pushButton_clicked();

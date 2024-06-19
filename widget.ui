@@ -367,16 +367,6 @@
         </property>
        </widget>
       </item>
-      <item row="0" column="1">
-       <widget class="QSpinBox" name="jiaochagailv">
-        <property name="minimumSize">
-         <size>
-          <width>120</width>
-          <height>30</height>
-         </size>
-        </property>
-       </widget>
-      </item>
       <item row="1" column="0">
        <widget class="QLabel" name="label_12">
         <property name="sizePolicy">
@@ -392,16 +382,6 @@
         </property>
         <property name="text">
          <string>突变概率</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="1">
-       <widget class="QSpinBox" name="tubiangailv">
-        <property name="minimumSize">
-         <size>
-          <width>70</width>
-          <height>30</height>
-         </size>
         </property>
        </widget>
       </item>
@@ -456,6 +436,26 @@
         <property name="minimumSize">
          <size>
           <width>90</width>
+          <height>30</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QDoubleSpinBox" name="jiaochagailv">
+        <property name="minimumSize">
+         <size>
+          <width>120</width>
+          <height>30</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QDoubleSpinBox" name="tubiangailv">
+        <property name="minimumSize">
+         <size>
+          <width>70</width>
           <height>30</height>
          </size>
         </property>
