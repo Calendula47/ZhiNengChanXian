@@ -19,7 +19,7 @@ public:
     Widget(QWidget *parent = nullptr);
     ~Widget();
 
-    int randomNumberGenerate(int start, int end);
+    int randomNumberGenerate(int start, int end) const;
     void generateItem();
     void generatePlace();
     std::vector<int> generateIndividual();

@@ -31,10 +31,10 @@ Widget::Widget(QWidget *parent)
     ui->tubiangailv->setValue(0.01);
     ui->zhongqundaxiao->setRange(20,500);
     ui->zhongqundaxiao->setSingleStep(10);
-    ui->zhongqundaxiao->setValue(50);
-    ui->diedaicishu->setRange(100,1000);
+    ui->zhongqundaxiao->setValue(70);
+    ui->diedaicishu->setRange(100,50000);
     ui->diedaicishu->setSingleStep(100);
-    ui->diedaicishu->setValue(500);
+    ui->diedaicishu->setValue(5000);
 }
 
 Widget::~Widget()
@@ -42,7 +42,7 @@ Widget::~Widget()
     delete ui;
 }
 
-int Widget::randomNumberGenerate(int start, int end)//随机数生成器
+int Widget::randomNumberGenerate(int start, int end) const//随机数生成器
 {
     std::mt19937 gen(std::random_device{}());
     std::uniform_int_distribution dis(start,end);
@@ -140,7 +140,7 @@ std::vector<int> Widget::generateIndividual()//生成个体（第i个个体的�
 std::vector<std::vector<int> > Widget::generatePopulation()//生成种群
 {
     individual.clear();
-    for (int i = 0; i < ui->zhongqundaxiao->value() - 1; ++i)
+    for (int i = 0; i < ui->zhongqundaxiao->value(); ++i)
     {
         population.push_back(generateIndividual());
     }
@@ -150,7 +150,7 @@ std::vector<std::vector<int> > Widget::generatePopulation()//生成种群
 double Widget::fitness(const std::vector<int> &individual) const//适应度函数（现在只做出来了长度判断，重量有点没思路）
 {
     std::vector<Place> tempPlaces = places;
-    for (int i = 0; i < tempPlaces.size(); ++i)
+    for (int i = 0; i < tempPlaces.size(); ++i)//清空每个位置被占用的长度，因为这个数值在之前生成排样方法时被用过
     {
         tempPlaces[i].usedLength = 0;
         tempPlaces[i].usedWeight = 0;
@@ -209,7 +209,10 @@ std::pair<std::vector<int>, std::vector<int> > Widget::crossover(const std::vect
         std::vector<int> child2(parent2.begin(), parent2.begin() + point);
         child2.insert(child2.end(), parent1.begin() + point, parent1.end());
 
-        return {child1, child2};
+        std::vector<std::vector<int>> findMaxFitness = {parent1, parent2, child1, child2};
+        std::sort(findMaxFitness.begin(),findMaxFitness.end(),[this](const auto& a, const auto& b){return fitness(a) > fitness(b);});
+
+        return {findMaxFitness[0], findMaxFitness[1]};
     }
     else
     {
@@ -222,9 +225,12 @@ void Widget::mutate(std::vector<int> &individual) const//变异
     std::mt19937 gen(std::random_device{}());
     if (std::uniform_real_distribution<double>{0.0, 1.0}(gen) < ui->tubiangailv->value())
     {
-        int i = std::uniform_int_distribution<int>{0, static_cast<int>(individual.size() - 1)}(gen);
+        int i = std::uniform_int_distribution<int>{0, static_cast<int>(individual.size() - 1)}(gen);//进行一次两个位点的随机交换
         int j = std::uniform_int_distribution<int>{0, static_cast<int>(individual.size() - 1)}(gen);
         std::swap(individual[i], individual[j]);
+
+        int k = std::uniform_int_distribution<int>{0, static_cast<int>(individual.size() - 1)}(gen);//进行一次单个位点的随机变化
+        individual[k] = randomNumberGenerate(0, places.size() - 1);
     }
 }
 
@@ -236,12 +242,13 @@ std::vector<int> Widget::getBestIndividual() const//寻找最大适应度的个�
 void Widget::printBestSolution() const
 {
     auto best = getBestIndividual();
+    auto bestValue = fitness(best);
     QString text;
     text.clear();
     // text.append("第");
     // text.append(QString::number(currentGeneration));
     // text.append("次迭代填充度：");
-    text.append(QString::number(fitness(best)));
+    text.append(QString::number(bestValue));
     ui->shuchu->append(text);
 }
 
@@ -252,6 +259,7 @@ void Widget::runGeneticAlgorithm()//遗传函数本体
     {
         currentGeneration = generation;
         std::vector<std::vector<int>> newPopulation;
+        std::vector<std::vector<int>> prevPopulation = population;
         for (int i = 0; i < (ui->zhongqundaxiao->value() / 2); ++i)
         {
             auto parent1 = selection();
@@ -263,6 +271,10 @@ void Widget::runGeneticAlgorithm()//遗传函数本体
             newPopulation.push_back(child2);
         }
         population = newPopulation;
+        if(fitness(getBestIndividual()) == 0.0)
+        {
+            population = prevPopulation;
+        }
         printBestSolution();
     }
 }
