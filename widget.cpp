@@ -163,9 +163,9 @@ double Widget::fitness(const std::vector<int> &individual) const//适应度函�
     double usedRatio = 0;
     for (int i = 0; i < (tempPlaces.size() - 1); ++i)//计算每个空段的填充度,不考虑最后一个空段
     {
-        if(tempPlaces[i].length < tempPlaces[i].usedLength)//如果空段被使用的长度大于本身长度则直接返回适应度为0
+        if(tempPlaces[i].length < tempPlaces[i].usedLength)//如果空段被使用的长度大于本身长度则直接返回适应度为0.01
         {
-            return 0;
+            return 0.01;
         }
         else
         {
@@ -209,10 +209,12 @@ std::pair<std::vector<int>, std::vector<int> > Widget::crossover(const std::vect
         std::vector<int> child2(parent2.begin(), parent2.begin() + point);
         child2.insert(child2.end(), parent1.begin() + point, parent1.end());
 
-        std::vector<std::vector<int>> findMaxFitness = {parent1, parent2, child1, child2};
+        std::vector<std::vector<int>> findMaxFitness = {child1, child2, parent1, parent2};
         std::sort(findMaxFitness.begin(),findMaxFitness.end(),[this](const auto& a, const auto& b){return fitness(a) > fitness(b);});
 
         return {findMaxFitness[0], findMaxFitness[1]};
+
+        // return {child1, child2};
     }
     else
     {
@@ -259,7 +261,7 @@ void Widget::runGeneticAlgorithm()//遗传函数本体
     {
         currentGeneration = generation;
         std::vector<std::vector<int>> newPopulation;
-        std::vector<std::vector<int>> prevPopulation = population;
+        // std::vector<std::vector<int>> prevPopulation = population;
         for (int i = 0; i < (ui->zhongqundaxiao->value() / 2); ++i)
         {
             auto parent1 = selection();
@@ -271,10 +273,10 @@ void Widget::runGeneticAlgorithm()//遗传函数本体
             newPopulation.push_back(child2);
         }
         population = newPopulation;
-        if(fitness(getBestIndividual()) == 0.0)
-        {
-            population = prevPopulation;
-        }
+        // if(fitness(getBestIndividual()) == 0.0)
+        // {
+        //     population = prevPopulation;
+        // }
         printBestSolution();
     }
 }
