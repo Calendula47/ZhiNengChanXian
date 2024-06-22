@@ -31,13 +31,14 @@ public:
     void runGeneticAlgorithm();
     void printBestSolution() const;
 
-    struct Item{double length;double weight;};
-    struct Place{double layer;double position;double length;double usedLength;double usedWeight;};
+    struct Item{int length;int weight;};
+    struct Place{int layer;int position;int length;int usedLength;int usedWeight;};
     std::vector<Item> items;
     std::vector<Place> places;
     std::vector<int> itemOnShelf;
     int totalItemLength;
     int totalPlaceLength;
+    std::vector<int> individual;
     std::vector<std::vector<int>> population;
     int currentGeneration;
 
