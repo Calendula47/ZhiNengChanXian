@@ -2,7 +2,6 @@
 #define WIDGET_H
 
 #include <QWidget>
-#include <random>
 #include <vector>
 
 QT_BEGIN_NAMESPACE
@@ -32,14 +31,13 @@ public:
     void runGeneticAlgorithm();
     void printBestSolution() const;
 
-    struct Item{int length;int weight;};
-    struct Place{int layer;int position;int length;int usedLength;int usedWeight;};
+    struct Item{double length;double weight;};
+    struct Place{double layer;double position;double length;double usedLength;double usedWeight;};
     std::vector<Item> items;
     std::vector<Place> places;
     std::vector<int> itemOnShelf;
     int totalItemLength;
     int totalPlaceLength;
-    std::vector<int> individual;
     std::vector<std::vector<int>> population;
     int currentGeneration;
 
